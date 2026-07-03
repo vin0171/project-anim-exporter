@@ -32,7 +32,6 @@ const ALL_KEYFRAME_PROPERTY_NAMES_MAP: Record<KeyframePropertyFieldName, true> =
   PATH_TRIM_END: true
 };
 
-
 // Since we are cloning the frame it will include the animations
 // so we are just going to delete them 
 export function ResetAnimations(spriteData: FrameNode) {
@@ -58,8 +57,9 @@ export function ResetAnimations(spriteData: FrameNode) {
       height: n.height,
       width: n.width,
     },
-    tracks: JSON.parse(JSON.stringify(n.manualKeyframeTracks)) as Record<KeyframePropertyFieldName, ManualKeyframeTrackInput>
-    //animationStyle: 
+    // Parsing it so we make a copy
+    tracks: JSON.parse(JSON.stringify(n.manualKeyframeTracks)) as Record<KeyframePropertyFieldName, ManualKeyframeTrackInput>,
+    animationStyles: JSON.parse(JSON.stringify(n.animationStyles)) as AppliedAnimationStyle[]
   }));
 
   for (const animationPart of allAnimationParts) {
@@ -71,6 +71,12 @@ export function ResetAnimations(spriteData: FrameNode) {
       animationPart.removeManualKeyframeTrack({type: 'PROPERTY', name});
     }
   }
+
+  for (const animationPart of allAnimationStyles) {
+    console.log(animationPart.animationStyles);
+    console.log(figma.motion.figmaAnimationStyles());
+  }
+  
 
   const sprite = spriteData.clone();
 

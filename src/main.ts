@@ -1,6 +1,6 @@
 import { emit, on, once, showUI } from '@create-figma-plugin/utilities'
 import { CloseHandler, RecieveZIPData, RequestSpriteSheetAsBytes, SelectionChanged, ToggleSelectionChange } from './types'
-import { ExportTypes, SceneNodeInfo, SpriteSheetSettings } from './pluginInterface';
+import { ExportTypes, SceneNodeInfo, SpriteSheetSettings } from './interfaces/pluginInterface';
 
 import { ResetAnimations } from './utils/ResetAnimations';
 import { applyAnimationSnapshot } from './utils/ApplyAnimationSnapshot';

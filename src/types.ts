@@ -1,5 +1,5 @@
 import { EventHandler } from '@create-figma-plugin/utilities'
-import { SceneNodeInfo, SpriteSheetSettings } from './pluginInterface'
+import { SceneNodeInfo, SpriteSheetSettings } from './interfaces/pluginInterface'
 
 export interface CreateRectanglesHandler extends EventHandler {
   name: 'CREATE_RECTANGLES'

@@ -1,6 +1,6 @@
 import { Fragment, h } from 'preact'
 import { VerticalSpace, Text, Dropdown, DropdownOption, Textbox, Muted } from '@create-figma-plugin/ui'
-import { ExportTypes } from '../pluginInterface'
+import { ExportTypes } from '../interfaces/pluginInterface'
 import { useCallback } from 'preact/hooks'
 
 

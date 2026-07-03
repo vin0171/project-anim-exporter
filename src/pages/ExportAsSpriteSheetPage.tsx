@@ -1,6 +1,6 @@
 import { h } from 'preact'
 import { Button, Container, VerticalSpace, Text, Bold, Muted, Divider, TextboxNumeric, Checkbox} from '@create-figma-plugin/ui'
-import { ExportTypes, SpriteSheetSettings } from '../pluginInterface'
+import { ExportTypes, SpriteSheetSettings } from '../interfaces/pluginInterface'
 import { usePage } from '../context/PageContext'
 import { useNodes } from '../context/NodeContext'
 import { useCallback, useEffect, useState } from 'preact/hooks'

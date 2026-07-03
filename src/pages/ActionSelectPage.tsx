@@ -1,6 +1,6 @@
 import { h } from 'preact'
 import { Button, Container, VerticalSpace, Text, Bold, Muted, Divider, Banner, IconInfoSmall24 } from '@create-figma-plugin/ui'
-import { SceneNodeInfo } from '../pluginInterface'
+import { SceneNodeInfo } from '../interfaces/pluginInterface'
 import { usePage } from '../context/PageContext'
 import { useNodes } from '../context/NodeContext'
 import { useEffect } from 'preact/hooks'

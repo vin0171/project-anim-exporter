@@ -64,6 +64,7 @@ export function applyAnimationSnapshot(copy: FrameNode, animationDetails: {
     }
 
     if (hasScale && 'resize' in match && typeof (match as any).resize === 'function') {
+      console.log(baseW * scale.x + " " + baseH * scale.y)
       match.resize(baseW * scale.x, baseH * scale.y);
     } else if (scaleTrack && !('resize' in match)) {
       console.log('This Node cannot be resized');
