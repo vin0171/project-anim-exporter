@@ -27,6 +27,8 @@ export function lerpAngle(kfA: ManualKeyframeInput, kfB: ManualKeyframeInput, ti
   if (kfA.value.type === 'FLOAT' && kfB.value.type === 'FLOAT') {
     const a = kfA.value.value;
     const b = kfB.value.value;
+    // Angles in figma can go from -360 to 360 
+    // Also to note thta figma has counter-clockwise positive rotation
     let delta = (b - a) % 360;
     delta = ((delta + 540) % 360) - 180;
     return a + delta * t;

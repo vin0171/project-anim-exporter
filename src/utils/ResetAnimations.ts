@@ -72,12 +72,6 @@ export function ResetAnimations(spriteData: FrameNode) {
     }
   }
 
-  for (const animationPart of allAnimationStyles) {
-    console.log(animationPart.animationStyles);
-    console.log(figma.motion.figmaAnimationStyles());
-  }
-  
-
   const sprite = spriteData.clone();
 
   for (const { animationPart, tracks } of originalAnimationPart) {

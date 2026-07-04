@@ -6,7 +6,6 @@ import { ResetAnimations } from './utils/ResetAnimations';
 import { applyAnimationSnapshot } from './utils/ApplyAnimationSnapshot';
 import { strToU8, zipSync } from 'fflate';
 
-
 let selectionEnabled = true;
 
 // make this a callback
@@ -22,6 +21,7 @@ function handleSelectionChange() {
   });
   emit<SelectionChanged>("SELECTION_CHANGED", sceneNodeInfo);
 }
+
 
 // Hframes as in how many columns across
 function createSpriteSheet(spriteCopy: FrameNode, spritesheetSettings: SpriteSheetSettings) {
@@ -39,10 +39,11 @@ function createSpriteSheet(spriteCopy: FrameNode, spritesheetSettings: SpriteShe
   var timeLineDuration = animationDetails.timelineDuration;
   const rawSprite = animationDetails.sprite;
 
-  const noOfFrames = timeLineDuration * spritesheetSettings.framesPerSecond
-  for (var i = 0; i < noOfFrames; i++) {
+  const noOfFrames = Math.round(timeLineDuration * spritesheetSettings.framesPerSecond);
+
+  for (let i = 0; i < noOfFrames; i++) {
     const copy = rawSprite.clone();
-    var time = timeLineDuration * (i / noOfFrames);
+    const time = timeLineDuration * (i / (noOfFrames - 1));
     applyAnimationSnapshot(copy, animationDetails.originalAnimationPart, time);
     frame.appendChild(copy);
   }
@@ -82,7 +83,8 @@ async function handleSpriteSheetBytes(nodeIds: SceneNodeInfo[], spriteSheetSetti
 
 // Deals with Selection via Frame vs Selection of Group Of Nodes inside a Frame
 async function copySelectionIntoNewFrame(nodeIds: SceneNodeInfo[]) : Promise<FrameNode|null> {
- var part : BaseNode | null  = await figma.getNodeByIdAsync(nodeIds[0].id) as SceneNode;
+  var part : BaseNode | null  = await figma.getNodeByIdAsync(nodeIds[0].id) as SceneNode;
+  
   if (part === null) return null;
 
   var parent : BaseNode | null = part.parent;
@@ -104,8 +106,26 @@ async function copySelectionIntoNewFrame(nodeIds: SceneNodeInfo[]) : Promise<Fra
     const copy = node.clone() as FrameNode;
     frame.appendChild(copy);
     if (frame.type === 'PAGE') animationCopy = copy;
-    
   }
+  
+
+  if ('constraints' in animationCopy) {
+    console.log(animationCopy.constraints);
+    // animationCopy.constraints = {
+    //   horizontal: "SCALE",
+    //   vertical: "SCALE",
+    // };
+  }
+
+  // Copy bg and timeline duration 
+  animationCopy.fills = [];
+  if (part.timelines[0].duration) {
+    const [timeline] = animationCopy.timelines
+    if (timeline && 'setTimelineDuration' in animationCopy) {
+      animationCopy.setTimelineDuration(timeline.id, part.timelines[0].duration);
+    }
+  }
+
   return animationCopy;
 }
 

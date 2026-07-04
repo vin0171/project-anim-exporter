@@ -1,5 +1,7 @@
 import { lerpAngle, lerpScalar, lerpVector } from "./InterpolationUtils";
 
+
+
 export function applyAnimationSnapshot(copy: FrameNode, animationDetails: {
   animationPart: {
     node: SceneNode,
@@ -27,9 +29,12 @@ export function applyAnimationSnapshot(copy: FrameNode, animationDetails: {
     const cx = baseW / 2;
     const cy = baseH / 2;
 
-    const rotationTrack = detail.tracks["ROTATION"];
+    const rotationTrack = detail.tracks["ROTATION"]; 
+    // I'd assume (after testing) that you cant have transaltionXY with translationX and translatinY
+    // so cannot co-exist
     const translationTrack = detail.tracks["TRANSLATION_XY"];
     const scaleTrack = detail.tracks["SCALE_XY"];
+
     const opacityTrack = detail.tracks["OPACITY"];
 
     const theta = (rotationTrack?.baseValue && rotationTrack.baseValue.type === 'FLOAT')
@@ -44,42 +49,62 @@ export function applyAnimationSnapshot(copy: FrameNode, animationDetails: {
       ? sampleValue(scaleTrack, time) as Vector
       : { x: 1, y: 1 };
 
+    const opacity = (opacityTrack?.baseValue && opacityTrack.baseValue.type === 'FLOAT')
+      ? sampleValue(opacityTrack, time) as number
+      : 100;
+
     const hasRotation = rotationTrack?.baseValue?.type === 'FLOAT' && 'rotation' in match;
     const hasTranslation = translationTrack?.baseValue?.type === 'VECTOR';
     const hasScale = scaleTrack?.baseValue?.type === 'VECTOR';
+    const hasOpacity = opacityTrack?.baseValue?.type === 'FLOAT';
 
-    if (hasRotation || hasTranslation || hasScale) {
+    if (hasRotation || hasTranslation) {
       const c_ = Math.cos(theta);
       const s_ = Math.sin(theta);
-      const sx = scale.x;
-      const sy = scale.y;
 
       const pivotX = baseX + cx + translation.x;
       const pivotY = baseY + cy + translation.y;
 
+      //figma allows NEGATIVE SCALE so
+      // and resize doesnt allow for negatvei width so we do
+      // this instead to mimic the effect
+      const flipX = scale.x < 0 ? -1 : 1;
+      const flipY = scale.y < 0 ? -1 : 1;
+
+      const m00 = c_ * flipX;
+      const m10 = s_ * flipX;
+
+      const m01 = -s_ * flipY;
+      const m11 = c_ * flipY;
+
+      const scaleCx = cx * Math.abs(scale.x);
+      const scaleCy = cy * Math.abs(scale.y);
+ 
       match.relativeTransform = [
-        [c_ * sx, -s_ * sy, pivotX - (c_ * sx * cx - s_ * sy * cy)],
-        [s_ * sx,  c_ * sy, pivotY - (s_ * sx * cx + c_ * sy * cy)],
+        [m00, m01 , pivotX - (c_ * scaleCx - s_ * scaleCy )],
+        [m10, m11 , pivotY - (s_ * scaleCx  + c_  * scaleCy )],
       ];
-    }
 
-    if (hasScale && 'resize' in match && typeof (match as any).resize === 'function') {
-      console.log(baseW * scale.x + " " + baseH * scale.y)
-      match.resize(baseW * scale.x, baseH * scale.y);
-    } else if (scaleTrack && !('resize' in match)) {
-      console.log('This Node cannot be resized');
-      return;
+      // now we can resize with positive component!
+      if ('resize' in match && typeof match.resize === 'function') {
+        console.log(time, detail.animationPart.name, scale.y, scale.x, baseH, baseW);
+        match.resize(baseW * Math.abs(scale.x), baseH * Math.abs(scale.y));
+      }
     }
-
-    if (opacityTrack && 'opacity' in match) {
-      match.opacity = sampleValue(opacityTrack, time);
+    
+    if (hasOpacity && 'opacity' in match) {
+      match.opacity = opacity;
     }
   }
 }
 
+
 // Can Only Sample Two Types as of Now: Float and Vector
 function sampleValue(keyFramesAll: ManualKeyframeTrackInput, time: number, angular = false): any {
-  const { keyframes, baseValue } = keyFramesAll;
+  const { baseValue } = keyFramesAll;
+  const keyframes = [...(keyFramesAll.keyframes ?? [])].sort(
+    (a, b) => a.timelinePosition - b.timelinePosition
+  );
 
   if (baseValue === undefined) {
     console.log('This has no basevalue somehow');

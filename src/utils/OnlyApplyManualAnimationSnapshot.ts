@@ -1,0 +1,1 @@
+// Only apply Manual Snapshots 
