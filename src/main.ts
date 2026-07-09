@@ -1,5 +1,5 @@
 import { emit, on, once, showUI } from '@create-figma-plugin/utilities'
-import { CloseHandler, RecieveZIPData, RequestSpriteSheetAsBytes, SelectionChanged, ToggleSelectionChange } from './types'
+import { CloseHandler, RecieveSingleFile, RecieveZIPData, RequestSpriteSheetAsBytes, SelectionChanged, ToggleSelectionChange } from './types'
 import { ExportTypes, SceneNodeInfo, SpriteSheetSettings } from './interfaces/pluginInterface';
 
 import { ResetAnimations } from './utils/ResetAnimations';
@@ -37,12 +37,20 @@ function createSpriteSheet(spriteCopy: FrameNode, spritesheetSettings: SpriteShe
 
   const animationDetails = ResetAnimations(spriteCopy);
   var timeLineDuration = animationDetails.timelineDuration;
+  console.log("Timeline Duration of SpriteSheet is: ", timeLineDuration);
   const rawSprite = animationDetails.sprite;
 
   const noOfFrames = Math.round(timeLineDuration * spritesheetSettings.framesPerSecond);
+  rawSprite.locked = true;
+  rawSprite.visible = false;
+  // So its not on Users figma ui screen 
+  // spriteCopy.locked = true;
+  // spriteCopy.visible = false;
+  //spriteCopy.remove();
 
   for (let i = 0; i < noOfFrames; i++) {
     const copy = rawSprite.clone();
+    copy.visible = true;
     const time = timeLineDuration * (i / (noOfFrames - 1));
     applyAnimationSnapshot(copy, animationDetails.originalAnimationPart, time);
     frame.appendChild(copy);
@@ -58,11 +66,14 @@ async function handleSpriteSheetBytes(nodeIds: SceneNodeInfo[], spriteSheetSetti
   if (spriteCopy === null) return;
 
   const spriteSheet = createSpriteSheet(spriteCopy, spriteSheetSettings);
+  spriteCopy.remove();
+
   const files: Record<string, Uint8Array> = {};
 
   if (spriteSheetSettings.exportType === ExportTypes.SVG) {
     const string = await spriteSheet.exportAsync({ format: spriteSheetSettings.exportType });
-    files[`${spriteSheet.name}.svg`] = strToU8(string);
+    emit<RecieveSingleFile>('RECIEVE_SINGLE_FILE', "spriteSheet", strToU8(string), spriteSheetSettings.exportType);
+    //files[`${spriteSheet.name}.svg`] = strToU8(string);
   } else {
     const bytes = await spriteSheet.exportAsync({
       format: spriteSheetSettings.exportType,
@@ -71,25 +82,43 @@ async function handleSpriteSheetBytes(nodeIds: SceneNodeInfo[], spriteSheetSetti
         value: spriteSheetSettings.scale
       }
     });
-    const ext = spriteSheetSettings.exportType === ExportTypes.JPG ? 'jpg' : 'png';
-    files[`${spriteSheet.name}.${ext}`] = bytes;
+    //const ext = spriteSheetSettings.exportType === ExportTypes.JPG ? 'jpg' : 'png';
+    emit<RecieveSingleFile>('RECIEVE_SINGLE_FILE', "spriteSheet", bytes, spriteSheetSettings.exportType);
+    //files[`${spriteSheet.name}.${ext}`] = bytes;
+  }  
+
+  // idk why we would zip it
+  // const allFiles = zipSync(files);
+  // emit<RecieveZIPData>('RECIEVE_ZIP_DATA', 'sprite-sheet.zip', allFiles);
+}
+// Deals with Selection via Frame vs Selection of Group Of Nodes inside a Frame
+async function copySelectionIntoNewFrame(nodeIds: SceneNodeInfo[], selectionType?: string) : Promise<FrameNode|null> {
+
+  // for now fix this later as in if one selected it must be the main frame?
+  // multiple selected means 
+
+  // Change this condition to selectionTtype later 
+  if (nodeIds.length === 1) {
+    var part : BaseNode | null  = await figma.getNodeByIdAsync(nodeIds[0].id) as SceneNode;
+    if ("children" in part) {
+      var newNodeIds : SceneNodeInfo[] = [];
+      for (var child of part.children) {
+        newNodeIds.push({
+          name: child.name, 
+          id: child.id,
+        });
+      }
+      nodeIds = newNodeIds;
+    }
   }
 
-  spriteCopy.remove();
- 
-  const allFiles = zipSync(files);
-  emit<RecieveZIPData>('RECIEVE_ZIP_DATA', 'sprite-sheet.zip', allFiles);
-}
-
-// Deals with Selection via Frame vs Selection of Group Of Nodes inside a Frame
-async function copySelectionIntoNewFrame(nodeIds: SceneNodeInfo[]) : Promise<FrameNode|null> {
+  // from now on, parent shouldn't be the PAGE
   var part : BaseNode | null  = await figma.getNodeByIdAsync(nodeIds[0].id) as SceneNode;
-  
   if (part === null) return null;
 
   var parent : BaseNode | null = part.parent;
   
-  const frame = parent?.type === 'PAGE' ? figma.currentPage : figma.createFrame();
+  const frame = figma.createFrame();
   
   if ("resize" in frame && parent !== null && "width" in parent && "height" in parent) {
     frame.resize(parent.width ?? 512, parent.height ?? 512);
@@ -105,19 +134,15 @@ async function copySelectionIntoNewFrame(nodeIds: SceneNodeInfo[]) : Promise<Fra
 
     const copy = node.clone() as FrameNode;
     frame.appendChild(copy);
-    if (frame.type === 'PAGE') animationCopy = copy;
   }
   
-
-  if ('constraints' in animationCopy) {
-    console.log(animationCopy.constraints);
-    // animationCopy.constraints = {
-    //   horizontal: "SCALE",
-    //   vertical: "SCALE",
-    // };
-  }
-
   // Copy bg and timeline duration 
+  applyBackgroundAndTimelineSettings(animationCopy, part);
+
+  return animationCopy;
+}
+
+function applyBackgroundAndTimelineSettings(animationCopy: FrameNode, part: SceneNode) {
   animationCopy.fills = [];
   if (part.timelines[0].duration) {
     const [timeline] = animationCopy.timelines
@@ -125,8 +150,6 @@ async function copySelectionIntoNewFrame(nodeIds: SceneNodeInfo[]) : Promise<Fra
       animationCopy.setTimelineDuration(timeline.id, part.timelines[0].duration);
     }
   }
-
-  return animationCopy;
 }
 
 export default async function () {

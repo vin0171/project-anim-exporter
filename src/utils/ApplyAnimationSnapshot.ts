@@ -1,6 +1,5 @@
+import { calculateAdditionalValues } from "./CalculateAdditionalValuesFromStyleData";
 import { lerpAngle, lerpScalar, lerpVector } from "./InterpolationUtils";
-
-
 
 export function applyAnimationSnapshot(copy: FrameNode, animationDetails: {
   animationPart: {
@@ -13,11 +12,14 @@ export function applyAnimationSnapshot(copy: FrameNode, animationDetails: {
     height: number
   };
   tracks: Record<KeyframePropertyFieldName, ManualKeyframeTrackInput>;
+  animationStyles: AppliedAnimationStyle[];
 }[], time: number)
 {
   for (const detail of animationDetails) {
     const match = copy.findOne(node => node.name === detail.animationPart.name);
     if (match === null) continue;
+
+    const customAnimationStyleData = calculateAdditionalValues(detail.animationStyles, time);
 
     // we can't access the raw rotation value, as thats for top left pivot 
     // (see rotation documentaiton)
@@ -34,31 +36,43 @@ export function applyAnimationSnapshot(copy: FrameNode, animationDetails: {
     // so cannot co-exist
     const translationTrack = detail.tracks["TRANSLATION_XY"];
     const scaleTrack = detail.tracks["SCALE_XY"];
-
     const opacityTrack = detail.tracks["OPACITY"];
 
-    const theta = (rotationTrack?.baseValue && rotationTrack.baseValue.type === 'FLOAT')
+    var theta = (rotationTrack?.baseValue && rotationTrack.baseValue.type === 'FLOAT')
       ? -sampleValue(rotationTrack, time, true) * Math.PI / 180
       : 0;
 
-    const translation = (translationTrack?.baseValue && translationTrack.baseValue.type === 'VECTOR')
-      ? sampleValue(translationTrack, time) as Vector
+    var translation = (translationTrack?.baseValue && translationTrack.baseValue.type === 'VECTOR')
+      ? sampleValue(translationTrack, time)
       : { x: 0, y: 0 };
 
-    const scale = (scaleTrack?.baseValue && scaleTrack.baseValue.type === 'VECTOR')
-      ? sampleValue(scaleTrack, time) as Vector
+    var scale = (scaleTrack?.baseValue && scaleTrack.baseValue.type === 'VECTOR')
+      ? sampleValue(scaleTrack, time) 
       : { x: 1, y: 1 };
 
-    const opacity = (opacityTrack?.baseValue && opacityTrack.baseValue.type === 'FLOAT')
+    var opacity = (opacityTrack?.baseValue && opacityTrack.baseValue.type === 'FLOAT')
       ? sampleValue(opacityTrack, time) as number
-      : 100;
+      : 100;        
+
+    // Apply offsets
+    translation.x += customAnimationStyleData.positionOffset.x;
+    translation.y += customAnimationStyleData.positionOffset.y;
+
+    theta += customAnimationStyleData.rotationOffset;
+
+    scale.x *= customAnimationStyleData.scaleFactor.x;
+    scale.y *= customAnimationStyleData.scaleFactor.y;
+
+    opacity *= customAnimationStyleData.opacityMultiplier;
 
     const hasRotation = rotationTrack?.baseValue?.type === 'FLOAT' && 'rotation' in match;
     const hasTranslation = translationTrack?.baseValue?.type === 'VECTOR';
     const hasScale = scaleTrack?.baseValue?.type === 'VECTOR';
     const hasOpacity = opacityTrack?.baseValue?.type === 'FLOAT';
 
-    if (hasRotation || hasTranslation) {
+    if (hasRotation || hasTranslation || hasScale) {
+      // Most of figmas mnaualKeyframes are done with
+      // the pivot point as the centre
       const c_ = Math.cos(theta);
       const s_ = Math.sin(theta);
 
@@ -73,21 +87,18 @@ export function applyAnimationSnapshot(copy: FrameNode, animationDetails: {
 
       const m00 = c_ * flipX;
       const m10 = s_ * flipX;
-
       const m01 = -s_ * flipY;
       const m11 = c_ * flipY;
 
-      const scaleCx = cx * Math.abs(scale.x);
-      const scaleCy = cy * Math.abs(scale.y);
- 
-      match.relativeTransform = [
-        [m00, m01 , pivotX - (c_ * scaleCx - s_ * scaleCy )],
-        [m10, m11 , pivotY - (s_ * scaleCx  + c_  * scaleCy )],
-      ];
+      const scaledCx = cx * Math.abs(scale.x);
+      const scaledCy = cy * Math.abs(scale.y);
 
+      match.relativeTransform = [
+        [m00, m01, pivotX - (m00 * scaledCx + m01 * scaledCy)],
+        [m10, m11, pivotY - (m10 * scaledCx + m11 * scaledCy)],
+      ];
       // now we can resize with positive component!
       if ('resize' in match && typeof match.resize === 'function') {
-        console.log(time, detail.animationPart.name, scale.y, scale.x, baseH, baseW);
         match.resize(baseW * Math.abs(scale.x), baseH * Math.abs(scale.y));
       }
     }
@@ -102,12 +113,12 @@ export function applyAnimationSnapshot(copy: FrameNode, animationDetails: {
 // Can Only Sample Two Types as of Now: Float and Vector
 function sampleValue(keyFramesAll: ManualKeyframeTrackInput, time: number, angular = false): any {
   const { baseValue } = keyFramesAll;
-  const keyframes = [...(keyFramesAll.keyframes ?? [])].sort(
+  const keyframes : ManualKeyframeInput[] = [...(keyFramesAll.keyframes ?? [])].sort(
     (a, b) => a.timelinePosition - b.timelinePosition
   );
 
   if (baseValue === undefined) {
-    console.log('This has no basevalue somehow');
+    console.warn('This has no basevalue somehow');
     return;
   }
 
@@ -130,7 +141,7 @@ function sampleValue(keyFramesAll: ManualKeyframeTrackInput, time: number, angul
           ? lerpAngle(keyframes[i], keyframes[i + 1], time)
           : lerpScalar(keyframes[i], keyframes[i + 1], time);
       } else {
-        console.log(type + ' This Type is not supported by this plugin');
+        console.warn(type + ' This Type is not supported by this plugin');
       }
     }
   }

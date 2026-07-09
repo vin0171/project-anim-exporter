@@ -1,10 +1,10 @@
 import { h } from 'preact'
 import { Button, Container, VerticalSpace, Text, Bold, Muted, Divider, TextboxNumeric, Checkbox} from '@create-figma-plugin/ui'
-import { ExportTypes, SpriteSheetSettings } from '../interfaces/pluginInterface'
+import { ExportTypes, ExportTypeToMimeType, SpriteSheetSettings } from '../interfaces/pluginInterface'
 import { usePage } from '../context/PageContext'
 import { useNodes } from '../context/NodeContext'
 import { useCallback, useEffect, useState } from 'preact/hooks'
-import { RecieveZIPData, RequestSpriteSheetAsBytes } from '../types'
+import { RecieveSingleFile, RequestSpriteSheetAsBytes } from '../types'
 import { emit, on } from '@create-figma-plugin/utilities'
 import { ExportSection } from '../components/ExportTypeSection'
 
@@ -41,17 +41,18 @@ export function ExportAsSpriteSheet() {
   )
 
   useEffect(() => {
-    return on<RecieveZIPData>('RECIEVE_ZIP_DATA', function (zipName: string, data : Uint8Array) {
-      const blob = new Blob([Uint8Array.from(data)], { type: "application/zip" });
+    return on<RecieveSingleFile>('RECIEVE_SINGLE_FILE', function (fileName: string, data: Uint8Array, fileFormat: ExportTypes) {
+      const blob = new Blob([Uint8Array.from(data)], { type: ExportTypeToMimeType[fileFormat] });
       const url = URL.createObjectURL(blob);
 
       const a = document.createElement("a");
       a.href = url;
-      a.download = zipName;
+      a.download = fileName;
       a.click();
 
       URL.revokeObjectURL(url);
-    })
+    });
+
   });
 
   return (

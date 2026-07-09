@@ -16,3 +16,9 @@ export enum ExportTypes {
   PNG = 'PNG', 
   JPG = 'JPG'
 }
+
+export const ExportTypeToMimeType: Record<ExportTypes, string> = {
+  [ExportTypes.SVG]: "image/svg+xml",
+  [ExportTypes.PNG]: "image/png",
+  [ExportTypes.JPG]: "image/jpeg",
+};

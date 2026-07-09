@@ -1,3 +1,5 @@
+import { AnimationStyleName, animationStyleNamesMap, isAnimationStyleName } from "./AnimationStyle";
+
 // In case we need to use more property names
 const ALL_KEYFRAME_PROPERTY_NAMES_MAP: Record<KeyframePropertyFieldName, true> = {
   CORNER_RADIUS: true,
@@ -37,8 +39,7 @@ const ALL_KEYFRAME_PROPERTY_NAMES_MAP: Record<KeyframePropertyFieldName, true> =
 export function ResetAnimations(spriteData: FrameNode) {
 
   // So theres two forms of animation the manual key frames and the aniamtions styles (preset animation blocks)
-  const allAnimationParts = spriteData.findAll(c => Object.keys(c.animations).length > 0);
-  const allAnimationStyles = spriteData.findAll(c => Object.keys(c.animationStyles).length > 0);
+  const allAnimationParts = spriteData.findAll(c => Object.keys(c.animations).length > 0 || (c.animationStyles).length > 0);
 
   // Rename all parts for use later. Could use UID
   allAnimationParts.forEach((part, i) => {
@@ -63,23 +64,49 @@ export function ResetAnimations(spriteData: FrameNode) {
   }));
 
   for (const animationPart of allAnimationParts) {
-    timelineDuration = animationPart.timelines[0].duration;
+    timelineDuration = Math.max(timelineDuration, animationPart.timelines[0].duration);
     const ALL_KEYFRAME_PROPERTY_NAMES = Object.keys(ALL_KEYFRAME_PROPERTY_NAMES_MAP) as KeyframePropertyFieldName[];
-
+    
     for (const name of ALL_KEYFRAME_PROPERTY_NAMES) {
       // Each new sprite in our spriteSheet created does not need animations
       animationPart.removeManualKeyframeTrack({type: 'PROPERTY', name});
     }
+    const appliedStyles = animationPart.animationStyles ?? [];
+    for (const style of appliedStyles) {
+      animationPart.removeAnimationStyle(style.id);
+    }
   }
 
+  // After we have deleted everything, we can clone it, so this is just the raw sprite image
+  // this is what each sprite in our spritesheet will be based off of
   const sprite = spriteData.clone();
 
-  for (const { animationPart, tracks } of originalAnimationPart) {
+  // Add the animations back to orginial sprite/frame 
+  for (const { animationPart, tracks, animationStyles } of originalAnimationPart) {
     for (const [key, value] of Object.entries(tracks)) {
       const typedKey = key as KeyframePropertyFieldName;
       const typedValue = value as ManualKeyframeTrackInput;
       animationPart.node.applyManualKeyframeTrack({type: 'PROPERTY', name: typedKey }, typedValue);
     }
+    
+    for (const style of animationStyles) {
+      // TODO: This needs to be reworked later figma has styleId different for the actual object
+      // and the getAllAniamtionStyle's styleId
+      if (isAnimationStyleName(style.name)) {
+        const animStyleName: AnimationStyleName = style.name;
+        const correspondingStyleId: string = animationStyleNamesMap[animStyleName];
+        const config: AnimationStyleConfiguration = {
+          duration: style.duration,
+          timelineOffset: style.timelineOffset,
+          props: style.props
+        };
+
+        animationPart.node.applyAnimationStyle(correspondingStyleId, config);
+      } else {
+        console.warn('name: ' + style.name + ' with styleId: ' + style.styleId + ' is either a new type or has been unimplemeneted');
+      }
+    }
+
   }
 
   return { sprite, timelineDuration, originalAnimationPart };

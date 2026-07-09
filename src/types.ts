@@ -1,5 +1,5 @@
 import { EventHandler } from '@create-figma-plugin/utilities'
-import { SceneNodeInfo, SpriteSheetSettings } from './interfaces/pluginInterface'
+import { ExportTypes, SceneNodeInfo, SpriteSheetSettings } from './interfaces/pluginInterface'
 
 export interface CreateRectanglesHandler extends EventHandler {
   name: 'CREATE_RECTANGLES'
@@ -45,6 +45,11 @@ export interface ExportSpriteSheet extends EventHandler {
 export interface RecieveZIPData extends EventHandler {
   name: 'RECIEVE_ZIP_DATA'
   handler: (zipName: string, data: Uint8Array) => void
+}
+
+export interface RecieveSingleFile extends EventHandler {
+  name: 'RECIEVE_SINGLE_FILE'
+  handler: (fileName: string, data: Uint8Array, fileFormat: ExportTypes) => void
 }
 
 export interface RequestSpriteSheetAsBytes extends EventHandler {

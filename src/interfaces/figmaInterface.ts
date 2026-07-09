@@ -1,3 +1,5 @@
+/// All this is from figma.motion.animationStyle() call 
+
 export type FigmaAnimationStylePreset =
   | PositionPreset
   | ScalePreset
@@ -6,7 +8,7 @@ export type FigmaAnimationStylePreset =
   | OpacityPreset
   | PathPreset;
 
-interface PathPreset {
+export interface PathPreset {
   styleId: "Path";
   name: "motion.preset_name.path";
   description: string;
@@ -24,28 +26,31 @@ interface PathPreset {
     pathEndEndFrame: number;
 
     delay: number;
-    duration: number;
     easing: Easing;
   };
+  timelineOffset: number;
 }
 
-interface OpacityPreset {
+export interface OpacityPreset {
   styleId: "Opacity";
   name: "motion.preset_name.opacity";
   description: string;
   props: {
     type: "fadeIn" | "fadeOut" | "custom";
+    // Fade in adn fadeOut
     amount: number;
+    // Custom
     startFrame: number;
     endFrame: number;
+
     delay: number;
-    duration: number;
     easing: Easing;
   };
+  timelineOffset: number;
 }
 
 
-interface SizePreset {
+export interface SizePreset {
   styleId: "Size";
   name: "motion.preset_name.size";
   description: string;
@@ -58,13 +63,13 @@ interface SizePreset {
     endWidth: number;
     endHeight: number;
     delay: number;
-    duration: number;
     easing: Easing;
   };
+  timelineOffset: number;
 }
 
 
-interface RotationPreset {
+export interface RotationPreset {
   styleId: "Rotation";
   name: "motion.preset_name.rotation";
   description: string;
@@ -75,13 +80,13 @@ interface RotationPreset {
     start: number;
     end: number;
     delay: number;
-    duration: number;
     easing: Easing;
   };
+  timelineOffset: number;
 }
 
 
-interface ScalePreset {
+export interface ScalePreset {
   styleId: "Scale";
   name: "motion.preset_name.scale";
   description: string;
@@ -90,21 +95,23 @@ interface ScalePreset {
     axis: "w" | "h" | "whCombined";
     amount: number;
 
-    wStartWithDivider: number;
     wEndWithoutDivider: number;
     hStartWithoutDivider: number;
+
+    wStartWithDivider: number;
     wEndWithDivider: number;
+
     hStartWithDivider: number;
     hEndWithoutDivider: number;
 
     delay: number;
-    duration: number;
     easing: Easing;
   };
+  timelineOffset: number;
 }
 
 
-interface PositionPreset {
+export interface PositionPreset {
   styleId: "Position";
   name: "motion.preset_name.position";
   description: string;
@@ -126,7 +133,7 @@ interface PositionPreset {
     endX: number;
     endY: number;
     delay: number;
-    duration: number;
-    easing: Easing;
+    easing: MotionEasing;
   };
+  timelineOffset: number;
 }
