@@ -26,7 +26,7 @@ export interface PathPreset {
     pathEndEndFrame: number;
 
     delay: number;
-    easing: Easing;
+    easing: MotionEasing;
   };
   timelineOffset: number;
 }
@@ -44,7 +44,7 @@ export interface OpacityPreset {
     endFrame: number;
 
     delay: number;
-    easing: Easing;
+    easing: MotionEasing;
   };
   timelineOffset: number;
 }
@@ -63,7 +63,7 @@ export interface SizePreset {
     endWidth: number;
     endHeight: number;
     delay: number;
-    easing: Easing;
+    easing: MotionEasing;
   };
   timelineOffset: number;
 }
@@ -80,7 +80,7 @@ export interface RotationPreset {
     start: number;
     end: number;
     delay: number;
-    easing: Easing;
+    easing: MotionEasing;
   };
   timelineOffset: number;
 }
@@ -105,7 +105,7 @@ export interface ScalePreset {
     hEndWithoutDivider: number;
 
     delay: number;
-    easing: Easing;
+    easing: MotionEasing;
   };
   timelineOffset: number;
 }

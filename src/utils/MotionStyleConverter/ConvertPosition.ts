@@ -1,9 +1,11 @@
 import { PositionPreset } from "../../interfaces/figmaInterface";
 import { findEasingFunction } from "../InterpolationUtils";
+import { undefinedPropWarning } from "../UndefinedPropWarning";
 import { StyleAdditions } from "./StyleAdditions";
 
 export function convertPosition(style: AppliedAnimationStyle, styleAddition: StyleAdditions, time: number) {
   const anim = style.props as PositionPreset["props"];
+  undefinedPropWarning(anim, 'PositionPreset');
   if (anim === null) return;
 
   if (style.duration == null || style.duration <= 0) {
@@ -43,7 +45,7 @@ export function convertPosition(style: AppliedAnimationStyle, styleAddition: Sty
 
       break;
     }
-}
+  }
   return;
 }
 

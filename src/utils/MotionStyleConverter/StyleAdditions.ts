@@ -9,6 +9,7 @@
 // opacityMultiplier
 export interface StyleAdditions {
   positionOffset: { x: number, y: number},
+  // in radians
   rotationOffset: number,
   scaleFactor: { x: number, y: number},
   opacityMultiplier: number

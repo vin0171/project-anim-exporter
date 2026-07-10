@@ -71,9 +71,10 @@ export function ResetAnimations(spriteData: FrameNode) {
       // Each new sprite in our spriteSheet created does not need animations
       animationPart.removeManualKeyframeTrack({type: 'PROPERTY', name});
     }
-    const appliedStyles = animationPart.animationStyles ?? [];
-    for (const style of appliedStyles) {
-      animationPart.removeAnimationStyle(style.id);
+
+    const appliedStyleIds = (animationPart.animationStyles ?? []).map(style => style.id);
+    for (const styleId of appliedStyleIds) {
+      animationPart.removeAnimationStyle(styleId);
     }
   }
 

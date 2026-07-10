@@ -44,9 +44,9 @@ function createSpriteSheet(spriteCopy: FrameNode, spritesheetSettings: SpriteShe
   rawSprite.locked = true;
   rawSprite.visible = false;
   // So its not on Users figma ui screen 
-  // spriteCopy.locked = true;
-  // spriteCopy.visible = false;
-  //spriteCopy.remove();
+  // 
+  spriteCopy.locked = true;
+  spriteCopy.visible = false;
 
   for (let i = 0; i < noOfFrames; i++) {
     const copy = rawSprite.clone();
@@ -57,7 +57,6 @@ function createSpriteSheet(spriteCopy: FrameNode, spritesheetSettings: SpriteShe
   }
 
   rawSprite.remove();
-
   return frame;
 }
 
@@ -67,7 +66,7 @@ async function handleSpriteSheetBytes(nodeIds: SceneNodeInfo[], spriteSheetSetti
 
   const spriteSheet = createSpriteSheet(spriteCopy, spriteSheetSettings);
   spriteCopy.remove();
-
+  
   const files: Record<string, Uint8Array> = {};
 
   if (spriteSheetSettings.exportType === ExportTypes.SVG) {
@@ -127,17 +126,18 @@ async function copySelectionIntoNewFrame(nodeIds: SceneNodeInfo[], selectionType
   var animationCopy : any = frame;
   var part : BaseNode | null;
   for (var nodeInfo of nodeIds) {
-    var node : BaseNode | null  = await figma.getNodeByIdAsync(nodeInfo.id) as SceneNode;
-    if (node === null) continue;
+    var node : BaseNode | null  = await figma.getNodeByIdAsync(nodeInfo.id);
+    if (node === null || node.type === 'PAGE') continue;
 
     part = node; 
-
-    const copy = node.clone() as FrameNode;
+    if (!('clone' in node)) continue;
+    const copy = node.clone();
     frame.appendChild(copy);
   }
   
   // Copy bg and timeline duration 
-  applyBackgroundAndTimelineSettings(animationCopy, part);
+  const ani = part as SceneNode;
+  applyBackgroundAndTimelineSettings(animationCopy, ani);
 
   return animationCopy;
 }

@@ -53,3 +53,42 @@ export function lerpVector(kfA: ManualKeyframeInput, kfB: ManualKeyframeInput, t
   throw new Error("Incorrect type" + kfA.value.type + ", " + kfB.value.type + " needed VECTOR");
 }
 
+// Can Only Sample Two Types as of Now: Float and Vector
+export function sampleValue(keyFramesAll: ManualKeyframeTrackInput, time: number, angular = false): any {
+  const { baseValue } = keyFramesAll;
+  const keyframes : ManualKeyframeInput[] = [...(keyFramesAll.keyframes ?? [])].sort(
+    (a, b) => a.timelinePosition - b.timelinePosition
+  );
+
+  if (baseValue === undefined) {
+    console.warn('This has no basevalue somehow');
+    return;
+  }
+
+  if (!keyframes || keyframes.length === 0) {
+    return baseValue.value;
+  }
+
+  if (time <= keyframes[0].timelinePosition) return keyframes[0].value.value;
+  if (time >= keyframes[keyframes.length - 1].timelinePosition) {
+    return keyframes[keyframes.length - 1].value.value;
+  }
+  const type = baseValue.type;
+
+  for (let i = 0; i < keyframes.length - 1; i++) {
+    if (time >= keyframes[i].timelinePosition && time <= keyframes[i + 1].timelinePosition) {
+      if (type === 'VECTOR') {
+        return lerpVector(keyframes[i], keyframes[i + 1], time);
+      } else if (type === 'FLOAT') {
+        return angular
+          ? lerpAngle(keyframes[i], keyframes[i + 1], time)
+          : lerpScalar(keyframes[i], keyframes[i + 1], time);
+      } else {
+        console.warn(type + ' This Type is not supported by this plugin');
+      }
+    }
+  }
+
+  return keyframes[keyframes.length - 1].value.value;
+}
+
